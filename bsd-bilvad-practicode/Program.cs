@@ -161,47 +161,54 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
 }, outputOption, languageOption, noteOption, sortOption, removeEmptyLinesOoption, authorOption);
 createCommand.SetHandler(() =>
 {
-    var rspFile = new FileInfo("rspFile.txt");
-    Console.WriteLine("Enter values for the bundle command: ");
-    using (StreamWriter rspWriter = new StreamWriter(rspFile.FullName))
+    try
     {
-        string res = "";
-        Console.WriteLine("What is your file path?");
-        string output;
-        while (string.IsNullOrWhiteSpace(output = Console.ReadLine()))
+        var rspFile = new FileInfo("rspFile.txt");
+        Console.WriteLine("Enter values for the bundle command: ");
+        using (StreamWriter rspWriter = new StreamWriter(rspFile.FullName))
         {
-            Console.WriteLine("Path cannot be empty. Please enter a valid path.");
+            string res = "";
+            Console.WriteLine("What is your file path?");
+            string output;
+            while (string.IsNullOrWhiteSpace(output = Console.ReadLine()))
+            {
+                Console.WriteLine("Path cannot be empty. Please enter a valid path.");
+            }
+            rspWriter.WriteLine("--output " + output);
+            Console.WriteLine("Which programming languages do you want to combine to your file only- \n(C#, Java, Python, JavaScript, C++, Html, Css) 'all' for all files");
+            string language;
+            while (string.IsNullOrWhiteSpace(language = Console.ReadLine()))
+            {
+                Console.WriteLine("Language cannot be empty. Please enter a valid language.");
+            }
+            rspWriter.WriteLine(" --language " + language);
+
+            Console.WriteLine("Do you want to write the path as a comment? (y/n)");
+            string note = Console.ReadLine().Trim().ToLower() == "y" ? "--note true" : "--note false";
+            rspWriter.WriteLine(" " + note);
+
+            Console.WriteLine("Enter the order to sort! (ab/code)");
+            string sort = Console.ReadLine();
+            res += " --sort " + sort;
+
+            Console.WriteLine("Do you want to remove empty lines? (y/n)");
+            string remove = Console.ReadLine().Trim().ToLower() == "y" ? "--remove_empty_lines true" : "--remove_empty_lines false";
+            rspWriter.WriteLine(" " + remove);
+
+            Console.WriteLine("Who is your author?");
+            string author = Console.ReadLine();
+            rspWriter.WriteLine("--author " + author);
+
+            rspWriter.WriteLine(res);
+            Console.WriteLine("Response file created successfully: " + rspFile.FullName);
+            Console.WriteLine($"To run the command, use: bsddd dundle @{rspFile}");
         }
-        rspWriter.WriteLine("--output " + output);
-        Console.WriteLine("Which programming languages do you want to combine to your file only- \n(C#, Java, Python, JavaScript, C++, Html, Css) 'all' for all files");
-        string language;
-        while (string.IsNullOrWhiteSpace(language = Console.ReadLine()))
-        {
-            Console.WriteLine("Language cannot be empty. Please enter a valid language.");
-        }
-        rspWriter.WriteLine(" --language " + language);
-
-        Console.WriteLine("Do you want to write the path as a comment? (y/n)");
-        string note = Console.ReadLine().Trim().ToLower() == "y" ? "--note true" : "--note false";
-        rspWriter.WriteLine(" " + note);
-
-        Console.WriteLine("Enter the order to sort! (ab/code)");
-        string sort = Console.ReadLine();
-        res += " --sort " + sort;
-
-        Console.WriteLine("Do you want to remove empty lines? (y/n)");
-        string remove = Console.ReadLine().Trim().ToLower() == "y" ? "--remove_empty_lines true" : "--remove_empty_lines false";
-        rspWriter.WriteLine(" " + remove);
-
-        Console.WriteLine("Who is your author?");
-        string author = Console.ReadLine();
-        rspWriter.WriteLine("--author " + author);
-
-        rspWriter.WriteLine(res);
-        Console.WriteLine("Response file created successfully: " + rspFile.FullName);
-
-        Console.WriteLine($"To run the command, use: bsddd dundle @{rspFile}");
     }
+    catch (Exception e)
+    {
+        Console.WriteLine("ERROR: create the response file"+e.Message);
+    }
+    
 });
 var rootCommand = new RootCommand("root command for bundle CLI");
 rootCommand.AddCommand(bundleCommand);
