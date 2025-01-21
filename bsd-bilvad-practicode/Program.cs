@@ -54,13 +54,19 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
 {
     try
     {
-        File.Create(output.FullName).Close();
-        Console.WriteLine("output command succeed");
+        if (output == null || string.IsNullOrWhiteSpace(output.FullName))
+        {
+            File.Create(output.FullName).Close();
+            Console.WriteLine("output command succeed");
+        }
+        else
+            Console.WriteLine("output invalid");
         List<string> filesToBundle = new List<string>();
         List<string> sortfiles = new List<string>();
         //הכנסת ניתובי הקבצים הרצוייים לתוך ליסט
-        if (language != null)
+        if (!string.IsNullOrEmpty(language))
         {
+
             if (language == "all")
             {
                 filesToBundle = Directory.GetFiles(Directory.GetParent(output.FullName).FullName, "*", SearchOption.TopDirectoryOnly)
@@ -82,7 +88,6 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
                         if (lan.Equals(l.Key, StringComparison.OrdinalIgnoreCase))  // השוואה לא רגישה לאותיות
                         {
 
-                            Console.WriteLine("extaination " + Path.GetExtension(output.FullName));
                             filesToBundle.AddRange(Directory.GetFiles(Directory.GetParent(output.FullName).FullName, "*" + l.Value, SearchOption.AllDirectories)
                                                      .Where(file => file.EndsWith(l.Value, StringComparison.OrdinalIgnoreCase)).ToList());
                             Console.WriteLine("language command bsd work");
@@ -93,48 +98,47 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
                     Console.WriteLine("ERROR: you want invalid language");
 
             }
-        }
-        foreach (var item in filesToBundle)
-        {
-            Console.WriteLine(item);
-        }
-        //sort
-        sort = string.IsNullOrEmpty(sort) ? "ab" : sort.ToLower();
-        sortfiles = sortfiles.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).ToList();
-        //הכנסת שמות הקבצים ממוינים
-        sortfiles = (sort.ToLower() == "ab")
-            ? filesToBundle.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).OrderBy(path => Path.GetFileName(path)).ToList() // מיון לפי שם הקובץ
-            : filesToBundle.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).OrderBy(path => Path.GetExtension(path)).ToList(); // מיון לפי סיומת הקובץ
-        Console.WriteLine("sort files: ");
-        foreach (var file in sortfiles)
-        {
-            Console.WriteLine(file);
-        }
-        using (StreamWriter writerBundle = new StreamWriter(output.FullName, append: true))
-        {
-            if (author != null)
-                writerBundle.WriteLine("# name author is: " + author);
-            foreach (var filePath in sortfiles)
+            //sort
+            //sort = string.IsNullOrEmpty(sort) ? "ab" : sort.ToLower();
+            sortfiles = sortfiles.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).ToList();
+            //הכנסת שמות הקבצים ממוינים
+            sortfiles = (sort.ToLower() == "ab")
+                ? filesToBundle.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).OrderBy(path => Path.GetFileName(path)).ToList() // מיון לפי שם הקובץ
+                : filesToBundle.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).OrderBy(path => Path.GetExtension(path)).ToList(); // מיון לפי סיומת הקובץ
+            Console.WriteLine("sort files: ");
+            foreach (var file in sortfiles)
             {
-                string[] content = File.ReadAllLines(filePath);
+                Console.WriteLine(file);
+            }
+            using (StreamWriter writerBundle = new StreamWriter(output.FullName, append: true))
+            {
+                if (author != null)
+                    writerBundle.WriteLine("# name author is: " + author);
+                foreach (var filePath in sortfiles)
+                {
+                    string[] content = File.ReadAllLines(filePath);
 
-                if (note)
-                    writerBundle.WriteLine("# " + filePath);
+                    if (note)
+                        writerBundle.WriteLine("# " + filePath);
 
-                if (remove)
-                    content = content.Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
+                    if (remove)
+                        content = content.Where(line => !string.IsNullOrWhiteSpace(line)).ToArray();
 
-                foreach (var line in content)
-                    writerBundle.WriteLine(line);
+                    foreach (var line in content)
+                        writerBundle.WriteLine(line);
+                }
             }
         }
+        else
+            Console.WriteLine("ERROR: you must chhose programing language");
+
     }
     catch (DirectoryNotFoundException ex)
     {
         Console.WriteLine("ERROR: path invalid");
     }
 }, outputOption, languageOption, noteOption, sortOption, removeEmptyLinesOoption, authorOption);
-/createCommand.SetHandler(() =>
+/*createCommand.SetHandler(() =>
 {
     var rspFile = new FileInfo("rspFile.txt");
     Console.WriteLine("Enter values for the bundle command: ");
@@ -175,10 +179,9 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
         rspWriter.WriteLine(res);
         Console.WriteLine("Response file created successfully: " + rspFile.FullName);
 
-        
         Console.WriteLine($"To run the command, use: bsddd dundle @{rspFile}");
     }
-});
+});*/
 var rootCommand = new RootCommand("root command for bundle CLI");
 rootCommand.AddCommand(bundleCommand);
 rootCommand.AddCommand(createCommand);
