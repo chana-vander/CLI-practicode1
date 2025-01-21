@@ -24,6 +24,21 @@ var languagesMap = new Dictionary<string, string>
             { "Css",".Css" }
         };
 
+//
+List<string> excludedDirectories = new List<string>
+    {
+        "Debug",
+        "public",
+        "node_modules",
+        "Lib", ".idea",
+        ".itynb_checkpoints",
+        "bin",
+        "obj",
+        "publish",
+        "Migrations",
+        "test",
+        ".git"
+    };
 //note
 var noteOption = new Option<bool>("--note", "name file and path");
 noteOption.AddAlias("--n");
@@ -66,11 +81,15 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
         //הכנסת ניתובי הקבצים הרצוייים לתוך ליסט
         if (!string.IsNullOrEmpty(language))
         {
-
             if (language == "all")
             {
-                filesToBundle = Directory.GetFiles(Directory.GetParent(output.FullName).FullName, "*", SearchOption.TopDirectoryOnly)
-                .Where(file => languagesMap.Values.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase))).ToList();
+                filesToBundle = Directory.GetFiles(Directory.GetParent(output.FullName).FullName, "*", SearchOption.AllDirectories)
+                    .Where(file =>
+                    {
+                        string directoryName = Path.GetFileName(Path.GetDirectoryName(file) ?? string.Empty);
+                        return !excludedDirectories.Any(excluded => directoryName.Equals(excluded, StringComparison.OrdinalIgnoreCase)) &&
+                               languagesMap.Values.Any(ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                    }).ToList();
                 Console.WriteLine("all");
             }
             else
@@ -87,19 +106,21 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
                     {
                         if (lan.Equals(l.Key, StringComparison.OrdinalIgnoreCase))  // השוואה לא רגישה לאותיות
                         {
-
                             filesToBundle.AddRange(Directory.GetFiles(Directory.GetParent(output.FullName).FullName, "*" + l.Value, SearchOption.AllDirectories)
-                                                     .Where(file => file.EndsWith(l.Value, StringComparison.OrdinalIgnoreCase)).ToList());
+                                .Where(file =>
+                                {
+                                    string directoryName = Path.GetFileName(Path.GetDirectoryName(file) ?? string.Empty);
+                                    return !excludedDirectories.Any(excluded => directoryName.Equals(excluded, StringComparison.OrdinalIgnoreCase)) &&
+                                           file.EndsWith(l.Value, StringComparison.OrdinalIgnoreCase);
+                                }).ToList());
                             Console.WriteLine("language command bsd work");
                         }
                     }
                 }
                 if (filesToBundle.Count == 0)
                     Console.WriteLine("ERROR: you want invalid language");
-
             }
             //sort
-            //sort = string.IsNullOrEmpty(sort) ? "ab" : sort.ToLower();
             sortfiles = sortfiles.Where(file => !file.Equals(output.FullName, StringComparison.OrdinalIgnoreCase)).ToList();
             //הכנסת שמות הקבצים ממוינים
             sortfiles = (sort.ToLower() == "ab")
@@ -138,7 +159,7 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
         Console.WriteLine("ERROR: path invalid");
     }
 }, outputOption, languageOption, noteOption, sortOption, removeEmptyLinesOoption, authorOption);
-/*createCommand.SetHandler(() =>
+createCommand.SetHandler(() =>
 {
     var rspFile = new FileInfo("rspFile.txt");
     Console.WriteLine("Enter values for the bundle command: ");
@@ -181,7 +202,7 @@ bundleCommand.SetHandler((FileInfo output, string language, bool note, string so
 
         Console.WriteLine($"To run the command, use: bsddd dundle @{rspFile}");
     }
-});*/
+});
 var rootCommand = new RootCommand("root command for bundle CLI");
 rootCommand.AddCommand(bundleCommand);
 rootCommand.AddCommand(createCommand);
